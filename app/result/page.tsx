@@ -6,6 +6,9 @@ import { AdPlaceholder } from "../components/AdPlaceholder";
 import { MenuView } from "../components/MenuView";
 import { STORAGE_KEYS, type MenuConditions } from "../types";
 
+// AdSense 審査通過後に true にする
+const SHOW_ADS = false;
+
 type ViewState =
   | { status: "loading" }
   | { status: "ready"; result: string; meta: MenuConditions };
@@ -102,7 +105,7 @@ export default function ResultPage() {
         条件を変えて再生成する
       </button>
 
-      <AdPlaceholder />
+      {SHOW_ADS && <AdPlaceholder />}
     </main>
   );
 }
