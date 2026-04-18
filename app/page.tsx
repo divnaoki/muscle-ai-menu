@@ -76,12 +76,12 @@ export default function Home() {
           >
             メニューを作成する
           </Link>
-          <a
-            href="#how-to-use"
+          <Link
+            href="/articles"
             className="w-full rounded-md border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 sm:w-auto"
           >
-            使い方を見る
-          </a>
+            記事を読む
+          </Link>
         </div>
       </section>
 
