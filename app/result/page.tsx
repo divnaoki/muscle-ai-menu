@@ -99,7 +99,7 @@ export default function ResultPage() {
 
       <button
         type="button"
-        onClick={() => router.push("/")}
+        onClick={() => router.push("/generate")}
         className="mt-6 w-full rounded-md border border-indigo-300 bg-white px-4 py-3 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
       >
         条件を変えて再生成する

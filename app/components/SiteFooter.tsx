@@ -14,6 +14,12 @@ export function SiteFooter() {
           <span className="text-gray-300" aria-hidden="true">
             |
           </span>
+          <Link href="/generate" className="hover:text-indigo-700 hover:underline">
+            メニュー作成
+          </Link>
+          <span className="text-gray-300" aria-hidden="true">
+            |
+          </span>
           <Link href="/privacy" className="hover:text-indigo-700 hover:underline">
             プライバシーポリシー
           </Link>

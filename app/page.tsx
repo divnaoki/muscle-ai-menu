@@ -1,191 +1,186 @@
-"use client";
+import Link from "next/link";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { SelectButton } from "./components/SelectButton";
-import {
-  BODY_PARTS,
-  DURATIONS,
-  EMPTY_CONDITIONS,
-  EQUIPMENTS,
-  GOALS,
-  LEVELS,
-  STORAGE_KEYS,
-  isComplete,
-  type BodyPart,
-  type Duration,
-  type Equipment,
-  type Goal,
-  type Level,
-  type MenuConditions,
-} from "./types";
+const STEPS = [
+  {
+    title: "条件を選ぶ",
+    body: "目標・鍛えたい部位・経験レベル・トレーニング時間・使える器具を、ボタンを押すだけで指定します。文章入力は不要です。",
+  },
+  {
+    title: "AIがメニューを作成",
+    body: "選択した条件をもとに、Google Gemini があなた専用の筋トレメニューを瞬時に生成します。",
+  },
+  {
+    title: "今日からトレーニング開始",
+    body: "ウォームアップからクールダウンまで、セット数・回数・フォームのコツまで含めて表示。コピーしてスマホで見ながら実施できます。",
+  },
+];
+
+const BENEFITS = [
+  {
+    title: "悩まずに始められる",
+    body: "「何をやればいいか分からない」が解消。条件に最適化された具体的なメニューがすぐ手に入ります。",
+  },
+  {
+    title: "自分に合ったレベル感",
+    body: "初心者から上級者まで対応。経験レベルと器具に応じて、無理なく続けられる強度に自動調整されます。",
+  },
+  {
+    title: "時間を有効活用",
+    body: "15分から90分まで、その日の使える時間に合わせたメニューを提案。スキマ時間でも本格的に鍛えられます。",
+  },
+  {
+    title: "完全無料・登録不要",
+    body: "アカウント登録もメールアドレス入力も不要。今すぐ使えて、生成データも端末内のみで処理されます。",
+  },
+];
+
+const FAQ = [
+  {
+    q: "本当に無料ですか？",
+    a: "はい、本サイトは完全無料でご利用いただけます。アカウント登録も不要です。",
+  },
+  {
+    q: "ジムに通っていなくても使えますか？",
+    a: "はい。「自重のみ」を選択すれば、器具なしで自宅トレーニング向けメニューが生成されます。",
+  },
+  {
+    q: "生成されたメニューの安全性は？",
+    a: "AI が生成する一般的なトレーニング案であり、医学的助言ではありません。持病・怪我のある方は医師にご相談のうえご利用ください。",
+  },
+  {
+    q: "個人情報は保存されますか？",
+    a: "氏名・メールアドレス等の個人情報は一切取得していません。詳細はプライバシーポリシーをご覧ください。",
+  },
+];
 
 export default function Home() {
-  const router = useRouter();
-  const [conditions, setConditions] = useState<MenuConditions>(EMPTY_CONDITIONS);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const raw = sessionStorage.getItem(STORAGE_KEYS.meta);
-    if (!raw) return;
-    try {
-      const parsed = JSON.parse(raw) as Partial<MenuConditions>;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage はクライアントのみで読めるため、マウント後に初期値を反映する必要がある
-      setConditions({
-        goal: GOALS.includes(parsed.goal as Goal) ? (parsed.goal as Goal) : null,
-        parts: Array.isArray(parsed.parts)
-          ? parsed.parts.filter((p): p is BodyPart => BODY_PARTS.includes(p as BodyPart))
-          : [],
-        level: LEVELS.includes(parsed.level as Level) ? (parsed.level as Level) : null,
-        duration: DURATIONS.includes(parsed.duration as Duration)
-          ? (parsed.duration as Duration)
-          : null,
-        equipment: EQUIPMENTS.includes(parsed.equipment as Equipment)
-          ? (parsed.equipment as Equipment)
-          : null,
-      });
-    } catch {
-      // ignore malformed meta
-    }
-  }, []);
-
-  const canSubmit = isComplete(conditions) && !loading;
-
-  function togglePart(part: BodyPart) {
-    setConditions((prev) => {
-      if (part === "全身") {
-        const already = prev.parts.includes("全身");
-        return { ...prev, parts: already ? [] : ["全身"] };
-      }
-      const withoutZenshin = prev.parts.filter((p) => p !== "全身");
-      const exists = withoutZenshin.includes(part);
-      return {
-        ...prev,
-        parts: exists
-          ? withoutZenshin.filter((p) => p !== part)
-          : [...withoutZenshin, part],
-      };
-    });
-  }
-
-  async function handleSubmit() {
-    if (!isComplete(conditions)) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conditions }),
-      });
-      const data = (await res.json()) as { result?: string; error?: string };
-      if (!res.ok || !data.result) {
-        setError(data.error ?? "エラーが発生しました");
-        setLoading(false);
-        return;
-      }
-      sessionStorage.setItem(STORAGE_KEYS.result, data.result);
-      sessionStorage.setItem(STORAGE_KEYS.meta, JSON.stringify(conditions));
-      router.push("/result");
-    } catch {
-      setError("通信エラーが発生しました");
-      setLoading(false);
-    }
-  }
-
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">AI筋トレメニュー生成</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          条件を選ぶだけで、AIがあなた専用のメニューを提案します。
+    <main className="mx-auto max-w-3xl px-4 py-10">
+      <section className="text-center">
+        <p className="inline-block rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+          完全無料・登録不要
         </p>
-      </header>
+        <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          AIがあなた専用の
+          <br className="sm:hidden" />
+          筋トレメニューを作成
+        </h1>
+        <p className="mx-auto mt-4 max-w-xl text-sm text-gray-600 sm:text-base">
+          目標・部位・レベル・時間・器具を選ぶだけ。Google Gemini があなたの条件にぴったり合った
+          トレーニングメニューを数秒で提案します。
+        </p>
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            href="/generate"
+            className="w-full rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 sm:w-auto"
+          >
+            メニューを作成する
+          </Link>
+          <a
+            href="#how-to-use"
+            className="w-full rounded-md border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 sm:w-auto"
+          >
+            使い方を見る
+          </a>
+        </div>
+      </section>
 
-      <div className="space-y-6">
-        <Field label="目標（単一選択）">
-          {GOALS.map((g) => (
-            <SelectButton
-              key={g}
-              label={g}
-              selected={conditions.goal === g}
-              onClick={() => setConditions({ ...conditions, goal: g })}
-              disabled={loading}
-            />
+      <section id="how-to-use" className="mt-16">
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900">使い方</h2>
+        <p className="mt-2 text-sm text-gray-600">3ステップで完了します。</p>
+        <ol className="mt-6 space-y-4">
+          {STEPS.map((step, i) => (
+            <li
+              key={step.title}
+              className="flex gap-4 rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
+            >
+              <span
+                aria-hidden="true"
+                className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white"
+              >
+                {i + 1}
+              </span>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">{step.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-gray-600">{step.body}</p>
+              </div>
+            </li>
           ))}
-        </Field>
+        </ol>
+      </section>
 
-        <Field label="鍛えたい部位（複数選択可・「全身」選択時は他と排他）">
-          {BODY_PARTS.map((p) => (
-            <SelectButton
-              key={p}
-              label={p}
-              selected={conditions.parts.includes(p)}
-              onClick={() => togglePart(p)}
-              disabled={loading}
-            />
+      <section className="mt-16">
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+          このアプリでできること・効果
+        </h2>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {BENEFITS.map((b) => (
+            <div
+              key={b.title}
+              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
+            >
+              <h3 className="text-base font-semibold text-indigo-700">{b.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600">{b.body}</p>
+            </div>
           ))}
-        </Field>
+        </div>
+      </section>
 
-        <Field label="経験レベル（単一選択）">
-          {LEVELS.map((l) => (
-            <SelectButton
-              key={l}
-              label={l}
-              selected={conditions.level === l}
-              onClick={() => setConditions({ ...conditions, level: l })}
-              disabled={loading}
-            />
+      <section className="mt-16">
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900">こんな方におすすめ</h2>
+        <ul className="mt-4 space-y-2 text-sm text-gray-700">
+          <li className="flex gap-2">
+            <span className="text-indigo-600" aria-hidden="true">
+              ✓
+            </span>
+            筋トレを始めたいけど何からやればいいか分からない方
+          </li>
+          <li className="flex gap-2">
+            <span className="text-indigo-600" aria-hidden="true">
+              ✓
+            </span>
+            ジムに行く時間がなく、自宅で効率よく鍛えたい方
+          </li>
+          <li className="flex gap-2">
+            <span className="text-indigo-600" aria-hidden="true">
+              ✓
+            </span>
+            毎回同じメニューに飽きて、新しい刺激が欲しい方
+          </li>
+          <li className="flex gap-2">
+            <span className="text-indigo-600" aria-hidden="true">
+              ✓
+            </span>
+            目的（筋肥大・ダイエット・体力向上）に合ったメニューを知りたい方
+          </li>
+        </ul>
+      </section>
+
+      <section className="mt-16">
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900">よくある質問</h2>
+        <dl className="mt-6 space-y-4">
+          {FAQ.map((item) => (
+            <div
+              key={item.q}
+              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
+            >
+              <dt className="text-sm font-semibold text-gray-900">Q. {item.q}</dt>
+              <dd className="mt-2 text-sm leading-relaxed text-gray-600">A. {item.a}</dd>
+            </div>
           ))}
-        </Field>
+        </dl>
+      </section>
 
-        <Field label="トレーニング時間（単一選択）">
-          {DURATIONS.map((d) => (
-            <SelectButton
-              key={d}
-              label={d}
-              selected={conditions.duration === d}
-              onClick={() => setConditions({ ...conditions, duration: d })}
-              disabled={loading}
-            />
-          ))}
-        </Field>
-
-        <Field label="使用できる器具（単一選択）">
-          {EQUIPMENTS.map((e) => (
-            <SelectButton
-              key={e}
-              label={e}
-              selected={conditions.equipment === e}
-              onClick={() => setConditions({ ...conditions, equipment: e })}
-              disabled={loading}
-            />
-          ))}
-        </Field>
-      </div>
-
-      {error && (
-        <p className="mt-6 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
-      )}
-
-      <button
-        type="button"
-        onClick={handleSubmit}
-        disabled={!canSubmit}
-        className="mt-6 w-full rounded-md bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-      >
-        {loading ? "AIがメニューを作成中..." : "メニューを生成する"}
-      </button>
+      <section className="mt-16 rounded-lg border border-indigo-200 bg-indigo-50 p-8 text-center">
+        <h2 className="text-xl font-bold text-gray-900">さっそくメニューを作ってみましょう</h2>
+        <p className="mt-2 text-sm text-gray-700">条件を選ぶだけ・所要時間1分以内</p>
+        <Link
+          href="/generate"
+          className="mt-6 inline-block rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700"
+        >
+          メニューを作成する
+        </Link>
+      </section>
     </main>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="mb-2 text-sm font-semibold text-gray-800">{label}</p>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
   );
 }
