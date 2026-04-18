@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SelectButton } from "./components/SelectButton";
-import { buildPrompt } from "./lib/buildPrompt";
 import {
   BODY_PARTS,
   DURATIONS,
@@ -52,11 +51,6 @@ export default function Home() {
   }, []);
 
   const canSubmit = isComplete(conditions) && !loading;
-
-  const previewPrompt = useMemo(() => {
-    if (!isComplete(conditions)) return null;
-    return buildPrompt(conditions);
-  }, [conditions]);
 
   function togglePart(part: BodyPart) {
     setConditions((prev) => {
@@ -183,15 +177,6 @@ export default function Home() {
       >
         {loading ? "AIがメニューを作成中..." : "メニューを生成する"}
       </button>
-
-      <details className="mt-8 rounded-md border border-gray-200 bg-gray-50 p-4 text-sm">
-        <summary className="cursor-pointer font-medium text-gray-700">
-          AIに送信されるプロンプト（自動生成）
-        </summary>
-        <pre className="mt-3 whitespace-pre-wrap text-xs text-gray-600">
-          {previewPrompt ?? "（全項目を選ぶとここにプロンプトが表示されます）"}
-        </pre>
-      </details>
     </main>
   );
 }
