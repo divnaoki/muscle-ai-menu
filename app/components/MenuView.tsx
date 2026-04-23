@@ -1,5 +1,6 @@
 "use client";
 
+import { Children, isValidElement, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -29,9 +30,26 @@ const components: Components = {
       </h2>
     );
   },
-  h3({ children }) {
+  h3({ children, node }) {
+    const name = readHastText(node) || extractText(children);
+    const query = name.trim() || "筋トレ";
+    const ytUrl = buildYouTubeSearchUrl(query);
     return (
-      <h3 className="mt-5 mb-2 text-base font-semibold text-gray-900">{children}</h3>
+      <div className="mt-5 mb-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h3 className="text-base font-semibold text-gray-900">{children}</h3>
+          <a
+            href={ytUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${query} のやり方をYouTubeで検索する`}
+            className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-medium text-red-700 transition-colors hover:bg-red-100 hover:text-red-800"
+          >
+            <YouTubeIcon className="h-3 w-3" aria-hidden="true" />
+            やり方動画
+          </a>
+        </div>
+      </div>
     );
   },
   p({ children }) {
@@ -75,5 +93,39 @@ export function MenuView({ markdown }: { markdown: string }) {
         {markdown}
       </ReactMarkdown>
     </div>
+  );
+}
+
+function buildYouTubeSearchUrl(name: string): string {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} やり方 初心者`)}`;
+}
+
+type HastLike = { type?: string; value?: string; children?: HastLike[] };
+
+function readHastText(node: unknown): string {
+  if (!node || typeof node !== "object") return "";
+  const n = node as HastLike;
+  if (typeof n.value === "string") return n.value;
+  if (Array.isArray(n.children)) return n.children.map(readHastText).join("");
+  return "";
+}
+
+function extractText(children: ReactNode): string {
+  return Children.toArray(children)
+    .map((child) => {
+      if (typeof child === "string" || typeof child === "number") return String(child);
+      if (isValidElement<{ children?: ReactNode }>(child)) {
+        return extractText(child.props.children);
+      }
+      return "";
+    })
+    .join("");
+}
+
+function YouTubeIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M23.5 6.5a3 3 0 0 0-2.1-2.1C19.5 4 12 4 12 4s-7.5 0-9.4.4A3 3 0 0 0 .5 6.5 31.5 31.5 0 0 0 0 12a31.5 31.5 0 0 0 .5 5.5 3 3 0 0 0 2.1 2.1C4.5 20 12 20 12 20s7.5 0 9.4-.4a3 3 0 0 0 2.1-2.1A31.5 31.5 0 0 0 24 12a31.5 31.5 0 0 0-.5-5.5zM9.6 15.5v-7l6.3 3.5-6.3 3.5z" />
+    </svg>
   );
 }
