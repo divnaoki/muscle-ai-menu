@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ARTICLES } from "./_data/articles";
+import { getAllArticles } from "@/lib/mdx";
 
 export const metadata: Metadata = {
   title: "記事一覧 | AI筋トレメニュー生成",
-  description: "筋トレ初心者・自宅トレーニングなど、トレーニングの基礎から実践まで役立つ記事を掲載しています。",
+  description:
+    "筋トレ初心者・自宅トレーニングなど、トレーニングの基礎から実践まで役立つ記事を掲載しています。",
 };
 
-export default function ArticlesPage() {
-  const sorted = [...ARTICLES].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+export default async function ArticlesPage() {
+  const articles = await getAllArticles();
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
       <header className="mb-8">
@@ -19,22 +20,26 @@ export default function ArticlesPage() {
       </header>
 
       <ul className="space-y-4">
-        {sorted.map((a) => (
+        {articles.map((a) => (
           <li
-            key={a.slug}
+            key={a.frontmatter.slug}
             className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition-colors hover:border-indigo-300"
           >
-            <Link href={`/articles/${a.slug}`} className="block">
+            <Link href={`/articles/${a.frontmatter.slug}`} className="block">
               <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                 <span className="rounded-full border border-indigo-300 bg-indigo-50 px-2 py-0.5 font-medium text-indigo-700">
-                  {a.category}
+                  {a.frontmatter.category}
                 </span>
-                <time dateTime={a.publishedAt}>{formatDate(a.publishedAt)}</time>
+                <time dateTime={a.frontmatter.publishedAt}>
+                  {formatDate(a.frontmatter.publishedAt)}
+                </time>
               </div>
               <h2 className="mt-2 text-lg font-semibold text-gray-900 hover:text-indigo-700">
-                {a.title}
+                {a.frontmatter.title}
               </h2>
-              <p className="mt-2 text-sm leading-relaxed text-gray-600">{a.description}</p>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                {a.frontmatter.description}
+              </p>
               <p className="mt-3 text-xs font-medium text-indigo-700">続きを読む →</p>
             </Link>
           </li>

@@ -1,39 +1,32 @@
-import fs from "node:fs/promises";
-import path from "node:path";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MDXRemote } from "next-mdx-remote/rsc";
 import { notFound } from "next/navigation";
-import { ArticleView } from "../../components/ArticleView";
-import { ARTICLES, getArticleBySlug } from "../_data/articles";
+import remarkGfm from "remark-gfm";
+import { mdxComponents } from "../../components/article/mdx-components";
+import { getAllArticles, getArticleBySlug } from "@/lib/mdx";
 
 type Params = Promise<{ slug: string }>;
 
 export async function generateStaticParams() {
-  return ARTICLES.map((a) => ({ slug: a.slug }));
+  const articles = await getAllArticles();
+  return articles.map((a) => ({ slug: a.frontmatter.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await getArticleBySlug(slug);
   if (!article) return { title: "記事が見つかりません | AI筋トレメニュー生成" };
   return {
-    title: `${article.title} | AI筋トレメニュー生成`,
-    description: article.description,
+    title: `${article.frontmatter.title} | AI筋トレメニュー生成`,
+    description: article.frontmatter.description,
   };
 }
 
 export default async function ArticlePage({ params }: { params: Params }) {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
-  if (!article) notFound();
-
-  const filePath = path.join(process.cwd(), "docs", article.file);
-  let markdown: string;
-  try {
-    markdown = await fs.readFile(filePath, "utf-8");
-  } catch {
-    notFound();
-  }
+  const article = await getArticleBySlug(slug);
+  if (!article || article.frontmatter.draft) notFound();
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
@@ -44,7 +37,15 @@ export default async function ArticlePage({ params }: { params: Params }) {
       </nav>
 
       <article>
-        <ArticleView markdown={markdown} />
+        <MDXRemote
+          source={article.content}
+          components={mdxComponents}
+          options={{
+            mdxOptions: {
+              remarkPlugins: [remarkGfm],
+            },
+          }}
+        />
       </article>
 
       <section className="mt-16 rounded-lg border border-indigo-200 bg-indigo-50 p-6 text-center">
